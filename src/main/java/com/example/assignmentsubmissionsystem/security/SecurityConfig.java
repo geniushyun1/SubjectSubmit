@@ -15,12 +15,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    
+
     @Bean
     public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -28,27 +28,20 @@ public class SecurityConfig {
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
-    
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-    
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, DaoAuthenticationProvider authProvider) throws Exception {
         http
             .authenticationProvider(authProvider)
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/images/**", "/h2-console/**").permitAll()
-                .requestMatchers("/professor/**").hasRole("PROFESSOR")
-                .requestMatchers("/student/**").hasRole("STUDENT")
-                .requestMatchers("/courses/professor/**").hasRole("PROFESSOR")
-                .requestMatchers("/courses/student/**").hasRole("STUDENT")
-                .requestMatchers("/courses/enroll").hasRole("STUDENT")
-                .requestMatchers("/courses/{id}").authenticated()
-                .requestMatchers("/courses/{id}/edit").hasRole("PROFESSOR")
-                .requestMatchers("/courses/{id}/delete").hasRole("PROFESSOR")
-                .requestMatchers("/courses/{id}/unenroll").hasRole("STUDENT")
+                .requestMatchers("/professor/**", "/courses/professor/**", "/courses/{id}/add-student", "/courses/{id}/remove-student").hasRole("PROFESSOR") // 교수 관련 모든 URL
+                .requestMatchers("/student/**", "/courses/student/**").hasRole("STUDENT")     // 학생 관련 모든 URL
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -71,7 +64,7 @@ public class SecurityConfig {
             .headers(headers -> headers
                 .frameOptions().sameOrigin()
             );
-        
+
         return http.build();
     }
 }

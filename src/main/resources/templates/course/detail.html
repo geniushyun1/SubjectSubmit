@@ -11,6 +11,18 @@
     <div th:replace="layout :: header"></div>
 
     <div class="container mt-4">
+        <!-- 메시지 표시 -->
+        <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${message}">성공 메시지</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${error}">오류 메시지</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        
         <div class="row">
             <div class="col-12">
                 <!-- 수업 정보 -->
@@ -126,9 +138,14 @@
                 <!-- 등록된 학생 목록 (교수만 볼 수 있음) -->
                 <div th:if="${isProfessor}" class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-users me-2"></i>등록된 학생
-                        </h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2"></i>등록된 학생
+                            </h5>
+                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                <i class="fas fa-user-plus me-1"></i>학생 추가
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div th:if="${enrolledStudents != null and !enrolledStudents.empty}">
@@ -137,15 +154,30 @@
                                     <thead>
                                         <tr>
                                             <th>학생명</th>
+                                            <th>사용자명</th>
                                             <th>이메일</th>
                                             <th>등록일</th>
+                                            <th>제출 현황</th>
+                                            <th>작업</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr th:each="enrollment : ${enrolledStudents}">
                                             <td th:text="${enrollment.student.name}">학생명</td>
+                                            <td th:text="${enrollment.student.username}">사용자명</td>
                                             <td th:text="${enrollment.student.email}">이메일</td>
                                             <td th:text="${#temporals.format(enrollment.enrolledAt, 'yyyy-MM-dd HH:mm')}">등록일</td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    <span th:text="${enrollment.student.submissions != null ? #lists.size(enrollment.student.submissions) : 0}">0</span>개 제출
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-outline-danger btn-sm" 
+                                                        th:onclick="'removeStudent(' + ${enrollment.student.id} + ')'">
+                                                    <i class="fas fa-user-minus"></i> 제거
+                                                </button>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -154,6 +186,9 @@
                         <div th:if="${enrolledStudents == null or enrolledStudents.empty}" class="text-center py-4">
                             <i class="fas fa-users fa-2x text-muted mb-3"></i>
                             <p class="text-muted">등록된 학생이 없습니다.</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                <i class="fas fa-user-plus me-1"></i>첫 번째 학생 추가
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -161,7 +196,55 @@
         </div>
     </div>
 
+    <!-- 학생 추가 모달 -->
+    <div th:if="${isProfessor}" class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStudentModalLabel">
+                        <i class="fas fa-user-plus me-2"></i>학생 추가
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/courses/{id}/add-student(id=${course.id})}" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="studentUsername" class="form-label">학생 사용자명</label>
+                            <input type="text" class="form-control" id="studentUsername" name="username" 
+                                   placeholder="학생의 사용자명을 입력하세요" required>
+                            <div class="form-text">등록된 학생의 사용자명을 입력하세요.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i>학생 추가
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div th:replace="layout :: footer"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function removeStudent(studentId) {
+            if (confirm('정말로 이 학생을 수업에서 제거하시겠습니까?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/courses/' + [[${course.id}]] + '/remove-student';
+                
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'studentId';
+                input.value = studentId;
+                
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
 </body>
 </html>
