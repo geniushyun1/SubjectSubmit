@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">내 수업</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div th:replace="layout :: header"></div>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-chalkboard-teacher me-2"></i>내 수업</h2>
+                    <a href="/courses/student/enroll" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>수업 등록
+                    </a>
+                </div>
+
+                <!-- 알림 메시지 -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- 등록된 수업 목록 -->
+                <div class="row" th:if="${enrolledCourses != null and !enrolledCourses.empty}">
+                    <div class="col-md-6 col-lg-4 mb-4" th:each="course : ${enrolledCourses}">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title" th:text="${course.name}">수업명</h5>
+                                <p class="card-text text-muted small mb-2">
+                                    <i class="fas fa-code me-1"></i>
+                                    <span th:text="${course.courseCode}">수업코드</span>
+                                </p>
+                                <p class="card-text" th:text="${course.description}">수업 설명</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user-tie me-1"></i>
+                                        <span th:text="${course.professor.name}">교수명</span>
+                                    </small>
+                                    <div class="btn-group" role="group">
+                                        <a th:href="@{/courses/{id}(id=${course.id})}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                th:onclick="'unenrollCourse(' + ${course.id} + ')'">
+                                            <i class="fas fa-sign-out-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 등록된 수업이 없는 경우 -->
+                <div th:if="${enrolledCourses == null or enrolledCourses.empty}" class="text-center py-5">
+                    <i class="fas fa-chalkboard-teacher fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">등록된 수업이 없습니다</h4>
+                    <p class="text-muted">수업 코드를 사용하여 수업에 등록해보세요.</p>
+                    <a href="/courses/student/enroll" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>수업 등록하기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 등록 해제 확인 모달 -->
+    <div class="modal fade" id="unenrollModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">수업 등록 해제 확인</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    정말로 이 수업에서 등록을 해제하시겠습니까?<br>
+                    등록 해제 후에는 해당 수업의 과제를 볼 수 없습니다.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <form id="unenrollForm" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">등록 해제</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="layout :: footer"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function unenrollCourse(courseId) {
+            document.getElementById('unenrollForm').action = '/courses/student/unenroll/' + courseId;
+            new bootstrap.Modal(document.getElementById('unenrollModal')).show();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과제 목록 - 과제 제출 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #F7FAFC;
+        }
+        .navbar-brand { font-weight: bold; }
+        .navbar-dark.bg-primary {
+            background-color: #4A5568 !important;
+        }
+        .card { 
+            box-shadow: 0 0.125rem 0.25rem rgba(139, 115, 85, 0.15); 
+            border: 1px solid #E2E8F0;
+            background-color: #F7FAFC;
+        }
+        .btn-primary { 
+            background-color: #4A5568; 
+            border-color: #4A5568; 
+        }
+        .btn-primary:hover { 
+            background-color: #718096; 
+            border-color: #718096; 
+        }
+        .btn-outline-primary {
+            color: #4A5568;
+            border-color: #4A5568;
+        }
+        .btn-outline-primary:hover {
+            background-color: #4A5568;
+            border-color: #4A5568;
+        }
+        .table th { 
+            background-color: #E2E8F0;
+            color: #4A5568;
+        }
+        .badge { font-size: 0.75em; }
+        .footer { 
+            background-color: #E2E8F0; 
+            padding: 2rem 0; 
+            margin-top: 3rem; 
+        }
+        .text-primary {
+            color: #4A5568 !important;
+        }
+        .text-muted {
+            color: #4A5568 !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="fas fa-graduation-cap me-2"></i>과제 제출 시스템
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">
+                            <i class="fas fa-home me-1"></i>대시보드
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasRole('STUDENT')">
+                        <a class="nav-link" href="/student/assignments">
+                            <i class="fas fa-tasks me-1"></i>과제 목록
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasRole('STUDENT')">
+                        <a class="nav-link" href="/student/submissions">
+                            <i class="fas fa-file-alt me-1"></i>내 제출물
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            <span sec:authentication="name">사용자</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="d-inline">
+                                    <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
+                                        <i class="fas fa-sign-out-alt me-1"></i>로그아웃
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span th:text="${error}">오류 메시지</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${message}">성공 메시지</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div>
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-tasks me-2"></i>과제 목록</h2>
+                <p class="text-muted">등록된 모든 과제를 확인하고 제출할 수 있습니다.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span th:text="${error}">오류 메시지</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${#lists.isEmpty(assignments)}" class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <h5>등록된 과제가 없습니다</h5>
+                    <p>교수님이 과제를 등록하면 여기에 표시됩니다.</p>
+                </div>
+
+                <div th:if="${!#lists.isEmpty(assignments)}" class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>과제명</th>
+                                <th>설명</th>
+                                <th>마감일</th>
+                                <th>상태</th>
+                                <th>제출 상태</th>
+                                <th>점수</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="assignment : ${assignments}">
+                                <td>
+                                    <a th:href="@{/student/assignments/{id}(id=${assignment.id})}" 
+                                       th:text="${assignment.title}" class="text-decoration-none fw-bold">
+                                        과제명
+                                    </a>
+                                </td>
+                                <td>
+                                    <span th:text="${#strings.abbreviate(assignment.description, 50)}" 
+                                          th:title="${assignment.description}">설명</span>
+                                </td>
+                                <td th:text="${#temporals.format(assignment.dueDate, 'yyyy-MM-dd HH:mm')}">마감일</td>
+                                <td>
+                                    <span th:if="${assignment.dueDate > T(java.time.LocalDateTime).now()}" 
+                                          class="badge bg-success">진행중</span>
+                                    <span th:if="${assignment.dueDate <= T(java.time.LocalDateTime).now()}" 
+                                          class="badge bg-secondary">마감</span>
+                                </td>
+                                <td>
+                                    <span th:if="${mySubmissions.?[assignment.id == assignment.id].isEmpty()}" 
+                                          class="badge bg-warning">미제출</span>
+                                    <span th:if="${!#lists.isEmpty(mySubmissions.?[assignment.id == assignment.id])}" 
+                                          class="badge bg-success">제출완료</span>
+                                </td>
+                                <td>
+                                    <span th:if="${!#lists.isEmpty(mySubmissions.?[assignment.id == assignment.id])}">
+                                        <span th:if="${mySubmissions.?[assignment.id == assignment.id][0].score != null}" 
+                                              class="badge bg-primary" 
+                                              th:text="${mySubmissions.?[assignment.id == assignment.id][0].score}">점수</span>
+                                        <span th:if="${mySubmissions.?[assignment.id == assignment.id][0].score == null}" 
+                                              class="badge bg-warning">미채점</span>
+                                    </span>
+                                    <span th:if="${mySubmissions.?[assignment.id == assignment.id].isEmpty()}" 
+                                          class="text-muted">-</span>
+                                </td>
+                                <td>
+                                    <a th:href="@{/student/assignments/{id}(id=${assignment.id})}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        </div>
+    </main>
+
+    <footer class="footer mt-auto">
+        <div class="container text-center">
+            <p class="text-muted mb-0">&copy; 2025 현욱 과제 제출 시스템. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

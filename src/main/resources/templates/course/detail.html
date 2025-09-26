@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">수업 상세</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div th:replace="layout :: header"></div>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <!-- 수업 정보 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>
+                                <span th:text="${course.name}">수업명</span>
+                            </h4>
+                            <div th:if="${isProfessor}">
+                                <a th:href="@{/professor/assignments/new(courseId=${course.id})}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-1"></i>과제 생성
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-code me-1"></i>
+                                    <strong>수업 코드:</strong> <span th:text="${course.courseCode}">COURSE001</span>
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-user-tie me-1"></i>
+                                    <strong>담당 교수:</strong> <span th:text="${course.professor.name}">교수명</span>
+                                </p>
+                                <p th:if="${course.description}" th:text="${course.description}">수업 설명</p>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary fs-6">
+                                        <i class="fas fa-users me-1"></i>
+                                        <span th:text="${#lists.size(enrolledStudents)}">0</span>명 등록
+                                    </span>
+                                </div>
+                                <div th:if="${isProfessor}">
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-tasks me-1"></i>
+                                        <span th:text="${#lists.size(assignments)}">0</span>개 과제
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 과제 목록 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tasks me-2"></i>과제 목록
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${assignments != null and !assignments.empty}">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>과제명</th>
+                                            <th>마감일</th>
+                                            <th>상태</th>
+                                            <th th:if="${isProfessor}">제출 현황</th>
+                                            <th>작업</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="assignment : ${assignments}">
+                                            <td>
+                                                <strong th:text="${assignment.title}">과제명</strong>
+                                                <br>
+                                                <small class="text-muted" th:text="${assignment.description}">과제 설명</small>
+                                            </td>
+                                            <td>
+                                                <span th:text="${#temporals.format(assignment.dueDate, 'yyyy-MM-dd HH:mm')}">2024-01-01 23:59</span>
+                                            </td>
+                                            <td>
+                                                <span th:if="${assignment.dueDate.isAfter(T(java.time.LocalDateTime).now())}" 
+                                                      class="badge bg-success">진행중</span>
+                                                <span th:unless="${assignment.dueDate.isAfter(T(java.time.LocalDateTime).now())}" 
+                                                      class="badge bg-danger">마감</span>
+                                            </td>
+                                            <td th:if="${isProfessor}">
+                                                <span class="badge bg-info">
+                                                    <span th:text="${#lists.size(assignment.submissions)}">0</span>명 제출
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a th:href="@{/assignments/{id}(id=${assignment.id})}" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i> 보기
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div th:if="${assignments == null or assignments.empty}" class="text-center py-4">
+                            <i class="fas fa-tasks fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">등록된 과제가 없습니다.</p>
+                            <div th:if="${isProfessor}">
+                                <a th:href="@{/professor/assignments/new(courseId=${course.id})}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>첫 번째 과제 생성
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 등록된 학생 목록 (교수만 볼 수 있음) -->
+                <div th:if="${isProfessor}" class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>등록된 학생
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${enrolledStudents != null and !enrolledStudents.empty}">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>학생명</th>
+                                            <th>이메일</th>
+                                            <th>등록일</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="enrollment : ${enrolledStudents}">
+                                            <td th:text="${enrollment.student.name}">학생명</td>
+                                            <td th:text="${enrollment.student.email}">이메일</td>
+                                            <td th:text="${#temporals.format(enrollment.enrolledAt, 'yyyy-MM-dd HH:mm')}">등록일</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div th:if="${enrolledStudents == null or enrolledStudents.empty}" class="text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">등록된 학생이 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="layout :: footer"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
